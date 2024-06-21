@@ -1,0 +1,5 @@
+{
+  "ENV": "testnet",
+  "FAUCET_ENDPOINT": "https://testnet-node.xelis.io/faucet",
+  "EXPLORER_LINK": "https://testnet-explorer.xelis.io"
+}

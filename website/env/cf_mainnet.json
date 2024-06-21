@@ -1,0 +1,5 @@
+{
+  "ENV": "mainnet",
+  "FAUCET_ENDPOINT": "",
+  "EXPLORER_LINK": "https://explorer.xelis.io"
+}

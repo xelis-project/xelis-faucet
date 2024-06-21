@@ -1,0 +1,16 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@xelis/sdk": "^0.9.8",
+    "await-to-js": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "nanoid": "^5.0.7",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "svg-captcha": "^1.4.0"
+  }
+}
