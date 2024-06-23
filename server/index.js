@@ -191,6 +191,10 @@ app.post('/confirm-drip', async (req, res) => {
   res.status(200).send({})
 })
 
+app.get(`*`, (req, res) => {
+  res.status(200).send("XELIS Faucet API")
+})
+
 async function sendTransactions() {
   const accounts = []
 

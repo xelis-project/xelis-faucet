@@ -1,5 +1,5 @@
 {
   "ENV": "mainnet",
-  "FAUCET_ENDPOINT": "",
+  "FAUCET_ENDPOINT": "https://node.xelis.io/faucet",
   "EXPLORER_LINK": "https://explorer.xelis.io"
 }
