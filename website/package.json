@@ -9,9 +9,13 @@
     "start": "npm run bundle -- --type cf_worker --dev --watch --sourcemap"
   },
   "dependencies": {
-    "g45-react": "^0.1.15",
     "goober": "^2.1.10",
     "react": "^18.3.1",
     "xelis-explorer": "github:xelis-project/xelis-explorer"
+  },
+  "devDependencies": {
+    "g45-react": "^0.1.15",
+    "shx": "^0.3.4",
+    "wrangler": "^3.61.0"
   }
 }
