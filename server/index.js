@@ -90,7 +90,11 @@ app.post('/txs', async (req, res) => {
 
     const offset = (page - 1) * size
 
-    const rows = await db.all(`SELECT * FROM transactions ORDER BY timestamp DESC LIMIT ? OFFSET ?`, [size, offset])
+    const rows = await db.all(`
+      SELECT * 
+      FROM transactions 
+      ORDER BY timestamp DESC LIMIT ? OFFSET ?
+    `, [size, offset])
     res.status(200).send(rows)
   } catch (err) {
     resError(res, err)
@@ -120,7 +124,12 @@ app.post('/request-drip', async (req, res) => {
   const timestamp = new Date().getTime()
   let lastTx = null
   try {
-    lastTx = await db.get(`SELECT * FROM transactions WHERE address = ? ORDER BY timestamp DESC LIMIT 1`, [address])
+    lastTx = await db.get(`
+      SELECT * 
+      FROM transactions 
+      WHERE address = ? 
+      ORDER BY timestamp DESC LIMIT 1
+    `, [address])
   } catch (err) {
     resError(res, err)
     return
@@ -238,7 +247,10 @@ async function sendTransactions() {
   }
 
   const operations = accounts.map((account) => ({
-    query: `INSERT INTO transactions (address, tx_hash, amount, timestamp) VALUES (?, ?, ?, ?)`,
+    query: `
+      INSERT INTO transactions (address, tx_hash, amount, timestamp) 
+      VALUES (?, ?, ?, ?)
+    `,
     params: [account.address, txHash, DRIP_AMOUNT, timestamp],
   }))
 
