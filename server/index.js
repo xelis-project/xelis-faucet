@@ -29,6 +29,8 @@ const CONFIG_SEND_INTERVAL = process.env.SEND_INTERVAL || 60000 // 1m
 const CONFIG_MAX_CAPTCHA_TRIES = process.env.MAX_CAPTCHA_TRIES || 3
 
 const CONFIG_USE_CORS = process.env.USE_CORS || 'false'
+const CONFIG_IP_MAX_REQUESTS = process.env.IP_MAX_REQUESTS || 10 // max requests per cooldown
+const CONFIG_IP_COOLDOWN = process.env.IP_COOLDOWN || 60000 // 1m
 
 const CONFIG_DAEMON_ENDPOINT = process.env.DAEMON_ENDPOINT
 const daemon = new DaemonRPC(CONFIG_DAEMON_ENDPOINT)
@@ -45,6 +47,7 @@ const res = await wallet.getAddress()
 console.log(`Successful wallet fetch ${res.result} at ${CONFIG_WALLET_ENDPOINT}.`)
 
 const sessions = new Map() // address, solution, tries, valid
+const ips = new Map() // count, timestamp
 
 await db.run(`
   CREATE TABLE IF NOT EXISTS transactions (
@@ -109,6 +112,13 @@ app.post('/txs', async (req, res) => {
 
 app.post('/request-drip', async (req, res) => {
   const { address } = req.body
+  const timestamp = Date.now()
+
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+  if (ipLimitReached(ip)) {
+    resError(res, new Error(`Max requests exceeded. IP banned temporarily.`))
+    return
+  }
 
   if (!address || address.length === 0) {
     resError(res, new Error(`Missing field "address".`))
@@ -127,7 +137,6 @@ app.post('/request-drip', async (req, res) => {
     }
   }
 
-  const timestamp = new Date().getTime()
   let lastTx = null
   try {
     lastTx = await db.get(`
@@ -217,6 +226,30 @@ app.get(`*`, (req, res) => {
   res.status(200).send("XELIS Faucet API")
 })
 
+function ipLimitReached(ip) {
+  const ipCheck = ips.get(ip)
+  const timestamp = Date.now()
+
+  if (ipCheck) {
+    if (timestamp - ipCheck.timestamp > CONFIG_IP_COOLDOWN) {
+      ips.set(ip, { timestamp, count: 1 })
+    } else {
+      ipCheck.count++
+      ipCheck.timestamp = timestamp
+  
+      if (ipCheck.count > CONFIG_IP_MAX_REQUESTS) {
+        return true
+      } else {
+        ips.set(ip, ipCheck)
+      }
+    }
+  } else {
+    ips.set(ip, { timestamp, count: 1 })
+  }
+
+  return false
+}
+
 async function sendTransactions() {
   const accounts = []
 
@@ -228,7 +261,7 @@ async function sendTransactions() {
   }
 
   if (accounts.length === 0) return
-  const timestamp = new Date().getTime()
+  const timestamp = Date.now()
   const total = accounts.length * CONFIG_DRIP_AMOUNT
 
   try {
