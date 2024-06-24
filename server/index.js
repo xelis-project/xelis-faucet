@@ -27,7 +27,7 @@ const DRIP_AMOUNT = 100000 // atomic value so .001 XEL
 const SEND_INTERVAL = 60000 // 1m
 const MAX_CAPTCHA_TRIES = 3
 
-const useCORS = process.env.USE_CORS || false
+const useCORS = process.env.USE_CORS || 'false'
 
 const daemonEndpoint = process.env.DAEMON_ENDPOINT
 const daemon = new DaemonRPC(daemonEndpoint)
@@ -59,7 +59,7 @@ function resError(res, err) {
   res.status(400).json({ error: err.message })
 }
 
-if (useCORS) {
+if (useCORS.toLowerCase() === 'true') {
   app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
