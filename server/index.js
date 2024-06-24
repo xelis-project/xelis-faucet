@@ -11,8 +11,9 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 const app = express()
-const port = process.env.PORT || 4000
-const hostname = process.env.HOSTNAME || `127.0.0.1`
+const CONFIG_PORT = process.env.PORT || 4000
+const CONFIG_HOSTNAME = process.env.HOSTNAME || `127.0.0.1`
+const CONFIG_ADDR_PREFIX = process.env.ADDR_PREFIX || `xet`
 
 app.use(bodyParser.json())
 
@@ -22,26 +23,26 @@ const db = await open({
   driver: sqlite3.Database
 })
 
-const DRIP_TIMEOUT = 300000 // 5m
-const DRIP_AMOUNT = 100000 // atomic value so .001 XEL
-const SEND_INTERVAL = 60000 // 1m
-const MAX_CAPTCHA_TRIES = 3
+const CONFIG_DRIP_TIMEOUT = process.env.DRIP_TIMEOUT || 300000 // 5m
+const CONFIG_DRIP_AMOUNT = process.env.DRIP_AMOUNT || 100000 // atomic value so .001 XEL
+const CONFIG_SEND_INTERVAL = process.env.SEND_INTERVAL || 60000 // 1m
+const CONFIG_MAX_CAPTCHA_TRIES = process.env.MAX_CAPTCHA_TRIES || 3
 
-const useCORS = process.env.USE_CORS || 'false'
+const CONFIG_USE_CORS = process.env.USE_CORS || 'false'
 
-const daemonEndpoint = process.env.DAEMON_ENDPOINT
-const daemon = new DaemonRPC(daemonEndpoint)
+const CONFIG_DAEMON_ENDPOINT = process.env.DAEMON_ENDPOINT
+const daemon = new DaemonRPC(CONFIG_DAEMON_ENDPOINT)
 
 const info = await daemon.getInfo()
-console.log(`Successful daemon fetch at ${daemonEndpoint}.`)
+console.log(`Successful daemon fetch at ${CONFIG_DAEMON_ENDPOINT}.`)
 
-const walletEndpoint = process.env.WALLET_ENDPOINT
-const walletUsername = process.env.WALLET_USERNAME
-const walletPassword = process.env.WALLET_PASSWORD
-const wallet = new WalletRPC(walletEndpoint, walletUsername, walletPassword)
+const CONFIG_WALLET_ENDPOINT = process.env.WALLET_ENDPOINT
+const CONFIG_WALLET_USERNAME = process.env.WALLET_USERNAME
+const CONFIG_WALLET_PASSWORD = process.env.WALLET_PASSWORD
+const wallet = new WalletRPC(CONFIG_WALLET_ENDPOINT, CONFIG_WALLET_USERNAME, CONFIG_WALLET_PASSWORD)
 
 const res = await wallet.getAddress()
-console.log(`Successful wallet fetch ${res.result} at ${walletEndpoint}.`)
+console.log(`Successful wallet fetch ${res.result} at ${CONFIG_WALLET_ENDPOINT}.`)
 
 const sessions = new Map() // address, solution, tries, valid
 
@@ -59,7 +60,7 @@ function resError(res, err) {
   res.status(400).json({ error: err.message })
 }
 
-if (useCORS.toLowerCase() === 'true') {
+if (CONFIG_USE_CORS.toLowerCase() === 'true') {
   app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
@@ -136,7 +137,7 @@ app.post('/request-drip', async (req, res) => {
   }
 
 
-  if (lastTx && timestamp - lastTx.timestamp < DRIP_TIMEOUT) {
+  if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_TIMEOUT) {
     resError(res, new Error(`This address is in cooldown.`))
     return
   }
@@ -166,7 +167,7 @@ app.post('/confirm-drip', async (req, res) => {
   if (session.solution !== solution.toLowerCase()) {
     session.tries++
 
-    if (session.tries > MAX_CAPTCHA_TRIES) {
+    if (session.tries > CONFIG_MAX_CAPTCHA_TRIES) {
       sessions.delete(sessionId)
       resError(res, new Error(`Maximum number of attempts reached for sending a valid captcha.`))
       return
@@ -174,6 +175,13 @@ app.post('/confirm-drip', async (req, res) => {
 
     sessions.set(sessionId, session)
     resError(res, new Error(`The captcha id is invalid.`))
+    return
+  }
+
+
+  if (!session.address.startsWith(CONFIG_ADDR_PREFIX)) {
+    sessions.delete(sessionId)
+    resError(res, new Error(`The address does not starts with ${CONFIG_ADDR_PREFIX}.`))
     return
   }
 
@@ -187,7 +195,7 @@ app.post('/confirm-drip', async (req, res) => {
 
     if (!validAddress) {
       sessions.delete(sessionId)
-      resError(res, new Error(`The address is not a valid XELIS address.`))
+      resError(res, new Error(`The address is not a valid.`))
       return
     }
   } catch (err) {
@@ -216,7 +224,7 @@ async function sendTransactions() {
 
   if (accounts.length === 0) return
   const timestamp = new Date().getTime()
-  const total = accounts.length * DRIP_AMOUNT
+  const total = accounts.length * CONFIG_DRIP_AMOUNT
 
   try {
     const res = await wallet.getBalance()
@@ -233,7 +241,7 @@ async function sendTransactions() {
   let txHash, txHex
   try {
     const transfers = accounts.map((account) => ({
-      amount: DRIP_AMOUNT,
+      amount: CONFIG_DRIP_AMOUNT,
       asset: XELIS_ASSET,
       destination: account.address,
     }))
@@ -251,7 +259,7 @@ async function sendTransactions() {
       INSERT INTO transactions (address, tx_hash, amount, timestamp) 
       VALUES (?, ?, ?, ?)
     `,
-    params: [account.address, txHash, DRIP_AMOUNT, timestamp],
+    params: [account.address, txHash, CONFIG_DRIP_AMOUNT, timestamp],
   }))
 
   db.run(`BEGIN TRANSACTION`)
@@ -281,8 +289,8 @@ async function sendTransactions() {
   })
 }
 
-setInterval(sendTransactions, SEND_INTERVAL)
+setInterval(sendTransactions, CONFIG_SEND_INTERVAL)
 
-app.listen(port, hostname, () => {
-  console.log(`Server is running on http://${hostname}:${port}`)
+app.listen(CONFIG_PORT, CONFIG_HOSTNAME, () => {
+  console.log(`Server is running on http://${CONFIG_HOSTNAME}:${CONFIG_PORT}`)
 })
