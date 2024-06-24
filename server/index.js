@@ -11,26 +11,26 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 const app = express()
-const CONFIG_PORT = process.env.PORT || 4000
-const CONFIG_HOSTNAME = process.env.HOSTNAME || `127.0.0.1`
-const CONFIG_ADDR_PREFIX = process.env.ADDR_PREFIX || `xet`
+const CONFIG_PORT = parseInt(process.env.PORT)
+const CONFIG_HOSTNAME = process.env.HOSTNAME
+const CONFIG_ADDR_PREFIX = process.env.ADDR_PREFIX
 
 app.use(bodyParser.json())
 
-const dbLocation = process.env.DB_LOCATION || `./faucet.db`
+const dbLocation = process.env.DB_LOCATION
 const db = await open({
   filename: dbLocation,
   driver: sqlite3.Database
 })
 
-const CONFIG_DRIP_COOLDOWN = process.env.DRIP_COOLDOWN || 300000 // 5m
-const CONFIG_DRIP_AMOUNT = process.env.DRIP_AMOUNT || 100000 // atomic value so .001 XEL
-const CONFIG_SEND_INTERVAL = process.env.SEND_INTERVAL || 60000 // 1m
-const CONFIG_MAX_CAPTCHA_TRIES = process.env.MAX_CAPTCHA_TRIES || 3
+const CONFIG_DRIP_COOLDOWN_MS = parseInt(process.env.DRIP_COOLDOWN_MS)
+const CONFIG_DRIP_AMOUNT_ATOMIC = parseInt(process.env.DRIP_AMOUNT_ATOMIC)
+const CONFIG_SEND_INTERVAL_MS = parseInt(process.env.SEND_INTERVAL_MS)
+const CONFIG_MAX_CAPTCHA_TRIES = parseInt(process.env.MAX_CAPTCHA_TRIES)
 
 const CONFIG_USE_CORS = process.env.USE_CORS || 'false'
-const CONFIG_IP_MAX_REQUESTS = process.env.IP_MAX_REQUESTS || 10 // max requests per cooldown
-const CONFIG_IP_COOLDOWN = process.env.IP_COOLDOWN || 60000 // 1m
+const CONFIG_IP_MAX_REQUESTS = parseInt(process.env.IP_MAX_REQUESTS)
+const CONFIG_IP_COOLDOWN_MS = parseInt(process.env.IP_COOLDOWN_MS)
 
 const CONFIG_DAEMON_ENDPOINT = process.env.DAEMON_ENDPOINT
 const daemon = new DaemonRPC(CONFIG_DAEMON_ENDPOINT)
@@ -84,8 +84,8 @@ app.post('/stats', async (req, res) => {
     res.status(200).send({
       ...row,
       session_count: sessions.size,
-      drip_amount: CONFIG_DRIP_AMOUNT,
-      drip_cooldown: CONFIG_DRIP_COOLDOWN,
+      drip_amount: CONFIG_DRIP_AMOUNT_ATOMIC,
+      drip_cooldown: CONFIG_DRIP_COOLDOWN_MS,
     })
   } catch (err) {
     resError(res, err)
@@ -151,16 +151,14 @@ app.post('/request-drip', async (req, res) => {
   }
 
 
-  if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_COOLDOWN) {
+  if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_COOLDOWN_MS) {
     resError(res, new Error(`This address is in cooldown.`))
     return
   }
 
-  // using svg captcha to avoid bots
-  // maybe you can train a AI on opentype, match svg letter paths and bypass the captcha?
-  // this requires work so this solution can mitigate bots for now
+  // using svg captcha and ip limiting to avoid bots
+  // maybe you can train an AI on opentype font, match svg letter paths and bypass the captcha?
   // we might have to find another solution / alternative for production faucet
-  // add limiting by ip address?
 
   const captcha = svgCaptcha.create({ size: 6, noise: 10, ignoreChars: `oO0iIlL1` })
   const id = nanoid()
@@ -231,7 +229,7 @@ function ipLimitReached(ip) {
   const timestamp = Date.now()
 
   if (ipCheck) {
-    if (timestamp - ipCheck.timestamp > CONFIG_IP_COOLDOWN) {
+    if (timestamp - ipCheck.timestamp > CONFIG_IP_COOLDOWN_MS) {
       ips.set(ip, { timestamp, count: 1 })
     } else {
       ipCheck.count++
@@ -262,7 +260,7 @@ async function sendTransactions() {
 
   if (accounts.length === 0) return
   const timestamp = Date.now()
-  const total = accounts.length * CONFIG_DRIP_AMOUNT
+  const total = accounts.length * CONFIG_DRIP_AMOUNT_ATOMIC
 
   try {
     const res = await wallet.getBalance()
@@ -279,7 +277,7 @@ async function sendTransactions() {
   let txHash, txHex
   try {
     const transfers = accounts.map((account) => ({
-      amount: CONFIG_DRIP_AMOUNT,
+      amount: CONFIG_DRIP_AMOUNT_ATOMIC,
       asset: XELIS_ASSET,
       destination: account.address,
     }))
@@ -297,7 +295,7 @@ async function sendTransactions() {
       INSERT INTO transactions (address, tx_hash, amount, timestamp) 
       VALUES (?, ?, ?, ?)
     `,
-    params: [account.address, txHash, CONFIG_DRIP_AMOUNT, timestamp],
+    params: [account.address, txHash, CONFIG_DRIP_AMOUNT_ATOMIC, timestamp],
   }))
 
   db.run(`BEGIN TRANSACTION`)
@@ -327,7 +325,7 @@ async function sendTransactions() {
   })
 }
 
-setInterval(sendTransactions, CONFIG_SEND_INTERVAL)
+setInterval(sendTransactions, CONFIG_SEND_INTERVAL_MS)
 
 app.listen(CONFIG_PORT, CONFIG_HOSTNAME, () => {
   console.log(`Server is running on http://${CONFIG_HOSTNAME}:${CONFIG_PORT}`)
