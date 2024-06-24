@@ -74,6 +74,27 @@ export default {
     font-size: 1.5em;
     margin-bottom: .5em;
   `,
+  dripDetails: {
+    container: css`
+      display: flex;
+      gap: 2em;
+      margin-bottom: 3em;
+      justify-content: center;
+    `,
+    item: css`
+      display: flex;
+      gap: .5em;
+      align-items: center;
+      flex-direction: column;
+    `,
+    title: css`
+      color: var(--muted-color);
+    `,
+    value: css`
+      font-size: 2em;
+      font-weight: bold;
+    `
+  },
   stats: {
     container: css`
       background: linear-gradient(to right, rgb(0 0 0 / 40%), transparent);

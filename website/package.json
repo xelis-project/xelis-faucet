@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "goober": "^2.1.10",
+    "pretty-ms": "^9.0.0",
     "react": "^18.3.1",
     "xelis-explorer": "github:xelis-project/xelis-explorer"
   },

@@ -5,7 +5,7 @@ import { formatXelis } from 'xelis-explorer/src/utils'
 import style from './style'
 import { callApi } from './call_api'
 
-function loadStats_SSR() {
+export function loadStats_SSR() {
   const defaultResult = { err: null, stats: {} }
   return useServerData(`stats`, async () => {
     const result = Object.assign({}, defaultResult)
@@ -21,25 +21,8 @@ function loadStats_SSR() {
   }, defaultResult)
 }
 
-function Stats() {
-  const statsResult = loadStats_SSR()
-
-  /*
-  const [stats, setStats] = useState({})
-
-  const loadStats = useCallback(async () => {
-    try {
-      const result = await callApi(`/stats`)
-      setStats(result)
-    } catch (err) {
-      console.log(err)
-    }
-  }, [])
-
-  useEffect(() => {
-    loadStats()
-  }, [])*/
-
+function Stats(props) {
+  const { statsResult } = props
   const { stats } = statsResult
 
   return <div className={style.stats.container}>
