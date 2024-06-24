@@ -23,7 +23,7 @@ const db = await open({
   driver: sqlite3.Database
 })
 
-const CONFIG_DRIP_TIMEOUT = process.env.DRIP_TIMEOUT || 300000 // 5m
+const CONFIG_DRIP_COOLDOWN = process.env.DRIP_COOLDOWN || 300000 // 5m
 const CONFIG_DRIP_AMOUNT = process.env.DRIP_AMOUNT || 100000 // atomic value so .001 XEL
 const CONFIG_SEND_INTERVAL = process.env.SEND_INTERVAL || 60000 // 1m
 const CONFIG_MAX_CAPTCHA_TRIES = process.env.MAX_CAPTCHA_TRIES || 3
@@ -78,7 +78,12 @@ app.post('/stats', async (req, res) => {
         MAX(timestamp) AS last_drip
       FROM transactions
     `, [])
-    res.status(200).send({ ...row, session_count: sessions.size })
+    res.status(200).send({
+      ...row,
+      session_count: sessions.size,
+      drip_amount: CONFIG_DRIP_AMOUNT,
+      drip_cooldown: CONFIG_DRIP_COOLDOWN,
+    })
   } catch (err) {
     resError(res, err)
   }
@@ -137,14 +142,14 @@ app.post('/request-drip', async (req, res) => {
   }
 
 
-  if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_TIMEOUT) {
+  if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_COOLDOWN) {
     resError(res, new Error(`This address is in cooldown.`))
     return
   }
 
   // using svg captcha to avoid bots
   // maybe you can train a AI on opentype, match svg letter paths and bypass the captcha?
-  // this requires works so this solution can mitigate bots for now
+  // this requires work so this solution can mitigate bots for now
   // we might have to find another solution / alternative for production faucet
   // add limiting by ip address?
 
