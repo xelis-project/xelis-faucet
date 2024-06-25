@@ -39,7 +39,7 @@ function Transactions() {
         return <tr key={id}>
           <td>{new Date(timestamp).toLocaleString()}</td>
           <td>
-            <a href={`${EXPLORER_LINK}/blocks/${tx_hash}`} target="_blank">
+            <a href={`${EXPLORER_LINK}/txs/${tx_hash}`} target="_blank">
               {reduceText(tx_hash)}
             </a>
           </td>

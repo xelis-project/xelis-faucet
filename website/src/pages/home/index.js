@@ -45,16 +45,18 @@ function Home() {
 
 function DripDetails(props) {
   const { statsResult } = props
+  
+  const { t } = useLang()
 
   const { stats } = statsResult
 
   return <div className={style.dripDetails.container}>
     <div className={style.dripDetails.item}>
-      <div className={style.dripDetails.title}>Drip Amount</div>
+      <div className={style.dripDetails.title}>{t(`Drip Amount`)}</div>
       <div className={style.dripDetails.value}>{formatXelis(stats.drip_amount || 0)}</div>
     </div>
     <div className={style.dripDetails.item}>
-      <div className={style.dripDetails.title}>Drip Cooldown</div>
+      <div className={style.dripDetails.title}>{t(`Drip Cooldown`)}</div>
       <div className={style.dripDetails.value}>{prettyMS(stats.drip_cooldown || 0)}</div>
     </div>
   </div>
@@ -86,7 +88,7 @@ function AddrForm(props) {
   }, [])
 
   return <form className={style.faucet.container} onSubmit={requestDrip}>
-    <input type="text" name="address" placeholder="Enter your wallet address"
+    <input type="text" name="address" placeholder={t(`Enter your wallet address`)}
       autoCapitalize="off" autoComplete="off"
     />
     <button type="submit">

@@ -26,11 +26,11 @@ function Stats(props) {
   const { stats } = statsResult
 
   return <div className={style.stats.container}>
-    <StatItem title="Drips" value={stats.drips || 0} />
-    <StatItem title="Total Sent" value={formatXelis(stats.total_sent || 0)} />
-    <StatItem title="Unique Accounts" value={stats.unique_accounts || 0} />
-    <StatItem title="Last Drip" value={stats.last_drip ? <Age timestamp={stats.last_drip} /> : `?`} />
-    <StatItem title="Drip Pool" value={stats.session_count || 0} />
+    <StatItem title={t(`Drips`)} value={stats.drips || 0} />
+    <StatItem title={t(`Total Sent`)} value={formatXelis(stats.total_sent || 0)} />
+    <StatItem title={t(`Unique Accounts`)} value={stats.unique_accounts || 0} />
+    <StatItem title={t(`Last Drip`)} value={stats.last_drip ? <Age timestamp={stats.last_drip} /> : `?`} />
+    <StatItem title={t(`Drip Pool`)} value={stats.session_count || 0} />
   </div>
 }
 
