@@ -1,6 +1,7 @@
 import { useServerData } from 'g45-react/hooks/useServerData'
 import Age from 'g45-react/components/age'
 import { formatXelis } from 'xelis-explorer/src/utils'
+import { useLang } from 'g45-react/hooks/useLang'
 
 import style from './style'
 import { callApi } from './call_api'
@@ -23,6 +24,9 @@ export function loadStats_SSR() {
 
 function Stats(props) {
   const { statsResult } = props
+
+  const { t } = useLang()
+
   const { stats } = statsResult
 
   return <div className={style.stats.container}>
