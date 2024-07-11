@@ -259,6 +259,8 @@ async function sendTransactions() {
   }
 
   if (accounts.length === 0) return
+
+  console.log(`Creating a tx for ${accounts.length} valid requests.`)
   const timestamp = Date.now()
   const total = accounts.length * CONFIG_DRIP_AMOUNT_ATOMIC
 
@@ -313,12 +315,18 @@ async function sendTransactions() {
   if (!txErr) {
     try {
       await daemon.submitTransaction(txHex)
+      console.log(`Tx ${txHash} sent.`)
     } catch (err) {
       txErr = err
     }
   }
 
-  db.run(txErr ? `ROLLBACK` : `COMMIT`)
+  if (txErr) {
+    db.run(`ROLLBACK`)
+    console.log(txErr)
+  } else {
+    db.run(`COMMIT`)
+  }
 
   accounts.forEach((account) => {
     sessions.delete(account.sessionId)
