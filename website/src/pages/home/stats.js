@@ -2,6 +2,7 @@ import { useServerData } from 'g45-react/hooks/useServerData'
 import Age from 'g45-react/components/age'
 import { formatXelis } from 'xelis-explorer/src/utils'
 import { useLang } from 'g45-react/hooks/useLang'
+import useLocale from 'g45-react/hooks/useLocale'
 
 import style from './style'
 import { callApi } from './call_api'
@@ -26,15 +27,16 @@ function Stats(props) {
   const { statsResult } = props
 
   const { t } = useLang()
+  const locale = useLocale()
 
   const { stats } = statsResult
 
   return <div className={style.stats.container}>
-    <StatItem title={t(`Drips`)} value={stats.drips || 0} />
-    <StatItem title={t(`Total Sent`)} value={formatXelis(stats.total_sent || 0)} />
-    <StatItem title={t(`Unique Accounts`)} value={stats.unique_accounts || 0} />
+    <StatItem title={t(`Drips`)} value={(stats.drips || 0).toLocaleString(locale)} />
+    <StatItem title={t(`Total Sent`)} value={formatXelis(stats.total_sent || 0, { locale })} />
+    <StatItem title={t(`Unique Accounts`)} value={(stats.unique_accounts || 0).toLocaleString(locale)} />
     <StatItem title={t(`Last Drip`)} value={stats.last_drip ? <Age timestamp={stats.last_drip} /> : `?`} />
-    <StatItem title={t(`Drip Pool`)} value={stats.session_count || 0} />
+    <StatItem title={t(`Drip Pool`)} value={(stats.session_count || 0).toLocaleString(locale)} />
   </div>
 }
 

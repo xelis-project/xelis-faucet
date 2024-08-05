@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react'
 import Table from 'xelis-explorer/src/components/table'
 import { reduceText, formatXelis } from 'xelis-explorer/src/utils'
 import { useLang } from 'g45-react/hooks/useLang'
+import useLocale from 'g45-react/hooks/useLocale'
 
 import style from './style'
 import { callApi } from './call_api'
 
 function Transactions() {
   const { t } = useLang()
+  const locale = useLocale()
 
   const [txs, setTxs] = useState([])
   const [loading, setLoading] = useState()
@@ -37,7 +39,7 @@ function Transactions() {
       list={txs} loading={loading} colSpan={4} onItem={(item) => {
         const { id, address, tx_hash, amount, timestamp } = item
         return <tr key={id}>
-          <td>{new Date(timestamp).toLocaleString()}</td>
+          <td>{new Date(timestamp).toLocaleString(locale)}</td>
           <td>
             <a href={`${EXPLORER_LINK}/txs/${tx_hash}`} target="_blank">
               {reduceText(tx_hash)}
@@ -48,7 +50,7 @@ function Transactions() {
               {reduceText(address, 0, 7)}
             </a>
           </td>
-          <td>{formatXelis(amount)}</td>
+          <td>{formatXelis(amount, { locale })}</td>
         </tr>
       }} />
   </div>

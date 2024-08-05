@@ -10,6 +10,7 @@ import Transactions from './txs'
 import Stats, { loadStats_SSR } from './stats'
 import style from './style'
 import { callApi } from './call_api'
+import useLocale from 'g45-react/hooks/useLocale'
 
 function Home() {
   const { t } = useLang()
@@ -45,15 +46,16 @@ function Home() {
 
 function DripDetails(props) {
   const { statsResult } = props
-  
+
   const { t } = useLang()
+  const locale = useLocale()
 
   const { stats } = statsResult
 
   return <div className={style.dripDetails.container}>
     <div className={style.dripDetails.item}>
       <div className={style.dripDetails.title}>{t(`Drip Amount`)}</div>
-      <div className={style.dripDetails.value}>{formatXelis(stats.drip_amount || 0)}</div>
+      <div className={style.dripDetails.value}>{formatXelis(stats.drip_amount || 0, { locale })}</div>
     </div>
     <div className={style.dripDetails.item}>
       <div className={style.dripDetails.title}>{t(`Drip Cooldown`)}</div>
@@ -141,7 +143,7 @@ function SolveCaptcha(props) {
   }
 
   return <form className={style.captcha.container} onSubmit={confirmDrip}>
-    <div className={style.captcha.title}>Solve the captcha!</div>
+    <div className={style.captcha.title}>{t(`Solve the captcha!`)}</div>
     <div dangerouslySetInnerHTML={{ __html: captchaSession.captcha }} />
     <input type="text" name="solution" placeholder="Enter captcha solution"
       value={captchaSolution} onChange={(e) => setCaptchaSolution(e.target.value)}
