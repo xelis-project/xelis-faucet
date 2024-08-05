@@ -43,8 +43,8 @@ const CONFIG_WALLET_USERNAME = process.env.WALLET_USERNAME
 const CONFIG_WALLET_PASSWORD = process.env.WALLET_PASSWORD
 const wallet = new WalletRPC(CONFIG_WALLET_ENDPOINT, CONFIG_WALLET_USERNAME, CONFIG_WALLET_PASSWORD)
 
-const res = await wallet.getAddress()
-console.log(`Successful wallet fetch ${res.result} at ${CONFIG_WALLET_ENDPOINT}.`)
+const response = await wallet.getAddress()
+console.log(`Successful wallet fetch ${response.result} at ${CONFIG_WALLET_ENDPOINT}.`)
 
 const sessions = new Map() // address, solution, tries, valid
 const ips = new Map() // count, timestamp
@@ -199,11 +199,11 @@ app.post('/confirm-drip', async (req, res) => {
 
   // check if valid address
   try {
-    const res = await daemon.validateAddress({
+    const response = await daemon.validateAddress({
       address: session.address,
       allow_integrated: false
     })
-    const validAddress = res.result.is_valid
+    const validAddress = response.result.is_valid
 
     if (!validAddress) {
       sessions.delete(sessionId)
@@ -265,8 +265,8 @@ async function sendTransactions() {
   const total = accounts.length * CONFIG_DRIP_AMOUNT_ATOMIC
 
   try {
-    const res = await wallet.getBalance()
-    const balance = res.result
+    const response = await wallet.getBalance()
+    const balance = response.result
     if (total >= balance) {
       console.log(`Faucet can't drip... need refill.`)
       return
@@ -284,9 +284,9 @@ async function sendTransactions() {
       destination: account.address,
     }))
 
-    const res = await wallet.buildTransaction({ broadcast: false, transfers, tx_as_hex: true })
-    txHex = res.result.tx_as_hex
-    txHash = res.result.hash
+    const response = await wallet.buildTransaction({ broadcast: false, transfers, tx_as_hex: true })
+    txHex = response.result.tx_as_hex
+    txHash = response.result.hash
   } catch (err) {
     console.log(err)
     return
