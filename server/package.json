@@ -4,7 +4,7 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@xelis/sdk": "^0.9.8",
+    "@xelis/sdk": "^0.9.10",
     "await-to-js": "^3.0.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",

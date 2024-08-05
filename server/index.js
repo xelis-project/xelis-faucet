@@ -111,7 +111,7 @@ app.post('/txs', async (req, res) => {
 })
 
 app.post('/request-drip', async (req, res) => {
-  const { address } = req.body
+  let { address } = req.body
   const timestamp = Date.now()
 
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
@@ -122,6 +122,33 @@ app.post('/request-drip', async (req, res) => {
 
   if (!address || address.length === 0) {
     resError(res, new Error(`Missing field "address".`))
+    return
+  }
+
+  // check if valid address
+  if (!address.startsWith(CONFIG_ADDR_PREFIX)) {
+    resError(res, new Error(`The address does not starts with ${CONFIG_ADDR_PREFIX}.`))
+    return
+  }
+
+  try {
+    const response = await daemon.validateAddress({
+      address,
+      allow_integrated: true
+    })
+
+    if (!response.result.is_valid) {
+      resError(res, new Error(`The address is not valid.`))
+      return
+    }
+
+    if (response.result.is_integrated) {
+      // extract address from integrated
+      const response2 = await daemon.splitAddress({ address })
+      address = response2.result.address
+    }
+  } catch (err) {
+    resError(res, err)
     return
   }
 
@@ -137,6 +164,7 @@ app.post('/request-drip', async (req, res) => {
     }
   }
 
+  // check if address has already been used recently
   let lastTx = null
   try {
     lastTx = await db.get(`
@@ -149,7 +177,6 @@ app.post('/request-drip', async (req, res) => {
     resError(res, err)
     return
   }
-
 
   if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_COOLDOWN_MS) {
     resError(res, new Error(`This address is in cooldown.`))
@@ -190,32 +217,6 @@ app.post('/confirm-drip', async (req, res) => {
     return
   }
 
-
-  if (!session.address.startsWith(CONFIG_ADDR_PREFIX)) {
-    sessions.delete(sessionId)
-    resError(res, new Error(`The address does not starts with ${CONFIG_ADDR_PREFIX}.`))
-    return
-  }
-
-  // check if valid address
-  try {
-    const response = await daemon.validateAddress({
-      address: session.address,
-      allow_integrated: false
-    })
-    const validAddress = response.result.is_valid
-
-    if (!validAddress) {
-      sessions.delete(sessionId)
-      resError(res, new Error(`The address is not a valid.`))
-      return
-    }
-  } catch (err) {
-    sessions.delete(sessionId)
-    resError(res, err)
-    return
-  }
-
   sessions.set(sessionId, { ...session, valid: true })
   res.status(200).send({})
 })
@@ -234,7 +235,7 @@ function ipLimitReached(ip) {
     } else {
       ipCheck.count++
       ipCheck.timestamp = timestamp
-  
+
       if (ipCheck.count > CONFIG_IP_MAX_REQUESTS) {
         return true
       } else {
