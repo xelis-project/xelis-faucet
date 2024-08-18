@@ -143,9 +143,8 @@ app.post('/request-drip', async (req, res) => {
     }
 
     if (response.result.is_integrated) {
-      // extract address from integrated
-      const response2 = await daemon.splitAddress({ address })
-      address = response2.result.address
+      resError(res, new Error(`The faucet does not support integrated addresses.`))
+      return
     }
   } catch (err) {
     resError(res, err)
