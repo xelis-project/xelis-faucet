@@ -46,8 +46,9 @@ const wallet = new WalletRPC(CONFIG_WALLET_ENDPOINT, CONFIG_WALLET_USERNAME, CON
 const response = await wallet.getAddress()
 console.log(`Successful wallet fetch ${response.result} at ${CONFIG_WALLET_ENDPOINT}.`)
 
-const sessions = new Map() // address, solution, tries, valid
-const ips = new Map() // count, timestamp
+const sessions = new Map() // { address, solution, tries, valid }
+const ipsRequest = new Map() // { count, timestamp }
+const ipsFaucet = new Map() // { timestamp }
 
 await db.run(`
   CREATE TABLE IF NOT EXISTS transactions (
@@ -115,8 +116,14 @@ app.post('/request-drip', async (req, res) => {
   const timestamp = Date.now()
 
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
+
   if (ipLimitReached(ip)) {
     resError(res, new Error(`Max requests exceeded. IP banned temporarily.`))
+    return
+  }
+
+  if (ipUsedRecently(ip)) {
+    resError(res, new Error("This IP was used recently. Wait for cooldown to finish."))
     return
   }
 
@@ -190,6 +197,7 @@ app.post('/request-drip', async (req, res) => {
   const id = nanoid()
   const newSession = { address, solution: captcha.text.toLowerCase(), tries: 0, valid: false }
   sessions.set(id, newSession)
+  ipsFaucet.set(ip, { timestamp })
   res.status(200).send({ sessionId: id, captcha: captcha.data })
 })
 
@@ -224,13 +232,28 @@ app.get(`*`, (req, res) => {
   res.status(200).send("XELIS Faucet API")
 })
 
+function ipUsedRecently(ip) {
+  const ipCheck = ipsFaucet.get(ip)
+  const timestamp = Date.now()
+
+  if (ipCheck) {
+    if (timestamp - ipCheck.timestamp > CONFIG_DRIP_COOLDOWN_MS) {
+      ipsFaucet.delete(ip)
+    } else {
+      return true
+    }
+  }
+
+  return false
+}
+
 function ipLimitReached(ip) {
-  const ipCheck = ips.get(ip)
+  const ipCheck = ipsRequest.get(ip)
   const timestamp = Date.now()
 
   if (ipCheck) {
     if (timestamp - ipCheck.timestamp > CONFIG_IP_COOLDOWN_MS) {
-      ips.set(ip, { timestamp, count: 1 })
+      ipsRequest.set(ip, { timestamp, count: 1 })
     } else {
       ipCheck.count++
       ipCheck.timestamp = timestamp
@@ -238,11 +261,11 @@ function ipLimitReached(ip) {
       if (ipCheck.count > CONFIG_IP_MAX_REQUESTS) {
         return true
       } else {
-        ips.set(ip, ipCheck)
+        ipsRequest.set(ip, ipCheck)
       }
     }
   } else {
-    ips.set(ip, { timestamp, count: 1 })
+    ipsRequest.set(ip, { timestamp, count: 1 })
   }
 
   return false
