@@ -44,6 +44,7 @@ const CONFIG_WALLET_PASSWORD = process.env.WALLET_PASSWORD
 const wallet = new WalletRPC(CONFIG_WALLET_ENDPOINT, CONFIG_WALLET_USERNAME, CONFIG_WALLET_PASSWORD)
 
 const response = await wallet.getAddress()
+const walletAddr = response.result
 console.log(`Successful wallet fetch ${response.result} at ${CONFIG_WALLET_ENDPOINT}.`)
 
 const sessions = new Map() // { address, solution, tries, valid }
@@ -135,6 +136,11 @@ app.post('/request-drip', async (req, res) => {
   // check if valid address
   if (!address.startsWith(CONFIG_ADDR_PREFIX)) {
     resError(res, new Error(`The address does not starts with ${CONFIG_ADDR_PREFIX}.`))
+    return
+  }
+
+  if (address === walletAddr) {
+    resError(res, new Error(`This is the faucet address. It cannot drip itself.`))
     return
   }
 
