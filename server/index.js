@@ -2,12 +2,12 @@ import express from 'express'
 import { open } from 'sqlite'
 import sqlite3 from 'sqlite3'
 import bodyParser from 'body-parser'
-import svgCaptcha from 'svg-captcha'
 import { nanoid } from 'nanoid'
 import { RPC as WalletRPC } from '@xelis/sdk/wallet/rpc'
 import { RPC as DaemonRPC } from '@xelis/sdk/daemon/rpc'
 import { XELIS_ASSET } from '@xelis/sdk/config'
 import dotenv from 'dotenv'
+import svgCaptcha from 'ppfun-captcha'
 
 dotenv.config()
 const app = express()
