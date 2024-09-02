@@ -305,7 +305,7 @@ async function sendTransactions() {
     return
   }
 
-  let txHash, txHex
+  let txHash
   try {
     const transfers = accounts.map((account) => ({
       amount: CONFIG_DRIP_AMOUNT_ATOMIC,
@@ -313,8 +313,7 @@ async function sendTransactions() {
       destination: account.address,
     }))
 
-    const response = await wallet.buildTransaction({ broadcast: false, transfers, tx_as_hex: true })
-    txHex = response.result.tx_as_hex
+    const response = await wallet.buildTransaction({ broadcast: true, transfers })
     txHash = response.result.hash
   } catch (err) {
     console.log(err)
@@ -338,15 +337,6 @@ async function sendTransactions() {
     } catch (err) {
       txErr = err
       break
-    }
-  }
-
-  if (!txErr) {
-    try {
-      await daemon.submitTransaction(txHex)
-      console.log(`Tx ${txHash} sent.`)
-    } catch (err) {
-      txErr = err
     }
   }
 
