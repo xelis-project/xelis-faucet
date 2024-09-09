@@ -27,6 +27,7 @@ const CONFIG_DRIP_COOLDOWN_MS = parseInt(process.env.DRIP_COOLDOWN_MS)
 const CONFIG_DRIP_AMOUNT_ATOMIC = parseInt(process.env.DRIP_AMOUNT_ATOMIC)
 const CONFIG_SEND_INTERVAL_MS = parseInt(process.env.SEND_INTERVAL_MS)
 const CONFIG_MAX_CAPTCHA_TRIES = parseInt(process.env.MAX_CAPTCHA_TRIES)
+const CONFIG_MAX_DRIP_PER_ADDR = parseInt(process.env.MAX_DRIP_PER_ADDR)
 
 const CONFIG_USE_CORS = process.env.USE_CORS || 'false'
 const CONFIG_IP_MAX_REQUESTS = parseInt(process.env.IP_MAX_REQUESTS)
@@ -176,11 +177,28 @@ app.post('/request-drip', async (req, res) => {
     }
   }
 
-  // check if address has already been used recently
-  let lastTx = null
+  // check total drips from address
+  let row
   try {
-    lastTx = await db.get(`
-      SELECT * 
+    row = await db.get(`
+      SELECT COUNT(*) AS totalDrips
+      FROM transactions 
+      WHERE address = ?
+    `, [address])
+  } catch (err) {
+    resError(res, err)
+    return
+  }
+
+  if (row.totalDrips >= CONFIG_MAX_DRIP_PER_ADDR) {
+    resError(res, new Error(`The address has reached the maximum number of drips allowed.`))
+    return
+  }
+
+  // check if address has already been used recently
+  try {
+    row = await db.get(`
+      SELECT *
       FROM transactions 
       WHERE address = ? 
       ORDER BY timestamp DESC LIMIT 1
@@ -190,7 +208,7 @@ app.post('/request-drip', async (req, res) => {
     return
   }
 
-  if (lastTx && timestamp - lastTx.timestamp < CONFIG_DRIP_COOLDOWN_MS) {
+  if (row && timestamp - row.timestamp < CONFIG_DRIP_COOLDOWN_MS) {
     resError(res, new Error(`This address is in cooldown.`))
     return
   }
