@@ -66,6 +66,10 @@ function resError(res, err) {
   res.status(400).json({ error: err.message })
 }
 
+function countValidSessions() {
+  return [...sessions.values()].filter(x => x.valid).length
+}
+
 if (CONFIG_USE_CORS.toLowerCase() === 'true') {
   app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*')
@@ -86,7 +90,7 @@ app.post('/stats', async (req, res) => {
     `, [])
     res.status(200).send({
       ...row,
-      session_count: sessions.size,
+      session_count: countValidSessions(),
       drip_amount: CONFIG_DRIP_AMOUNT_ATOMIC,
       drip_cooldown: CONFIG_DRIP_COOLDOWN_MS,
     })
